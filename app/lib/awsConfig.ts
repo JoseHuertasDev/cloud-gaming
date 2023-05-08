@@ -7,4 +7,4 @@ AWS.config.update({
   });
   
 export const ec2 = new AWS.EC2();
-export const instanceId = "i-0f4ef85447371f1b2"
+export const instanceId = process.env.INSTANCE_ID;
