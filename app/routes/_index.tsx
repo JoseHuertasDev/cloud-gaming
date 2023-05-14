@@ -5,15 +5,22 @@ import { useInterval } from "./utils";
 import { startInstance } from "~/lib/startInstance";
 import { stopInstance } from "~/lib/stopInstance";
 import { instanceId } from "~/lib/awsConfig";
+import { createSnapshotDetachAndDelete } from "~/lib/createSnapshotDetachAndDelete";
+import { restoreLatestSnapshotAndAttach } from "~/lib/restoreSnapshotAndAttach";
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
 
   const actionToDo = formData.get("actionToDo");
   if (actionToDo === "start") {
+    await restoreLatestSnapshotAndAttach();
     await startInstance();
-  } else if (actionToDo === "stop") {
+  } 
+  if (actionToDo === "stop") {
     await stopInstance();
+  }
+  if (actionToDo === "snapshot-and-delete-disk") {
+    console.log(await createSnapshotDetachAndDelete());
   }
 
   await getInstanceData();
@@ -55,10 +62,19 @@ export default function Index() {
             type="submit"
             name="actionToDo"
             value="stop"
-            className={`ml-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${!isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`mx-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${!isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!isRunning}
           >
             Stop Instance
+          </button>
+          <button
+            type="submit"
+            name="actionToDo"
+            value="snapshot-and-delete-disk"
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${!isStopped ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!isStopped}
+          >
+            Move disk to snapshot
           </button>
         </div>
       </Form>
