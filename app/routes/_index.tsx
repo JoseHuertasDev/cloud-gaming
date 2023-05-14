@@ -1,11 +1,10 @@
 import { ActionArgs, LoaderArgs, json } from "@remix-run/node";
 import { Form, useLoaderData, useRevalidator } from "@remix-run/react";
-import { getInstanceState } from "~/lib/getInstanceState";
+import { getInstanceData, getInstanceState, getInstancePublicIp, getInstanceUptime } from "~/lib/getInstanceInfo";
 import { useInterval } from "./utils";
 import { startInstance } from "~/lib/startInstance";
 import { stopInstance } from "~/lib/stopInstance";
 import { instanceId } from "~/lib/awsConfig";
-import { getInstancePublicIp } from "~/lib/getInstanceIp";
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
@@ -17,10 +16,12 @@ export const action = async ({ request }: ActionArgs) => {
     await stopInstance();
   }
 
-  return json({ instanceState: await getInstanceState(),instanceId, ip: await getInstancePublicIp() });
+  await getInstanceData();
+  return json({ instanceState: await getInstanceState(), instanceId, ip: await getInstancePublicIp(), uptime: await getInstanceUptime() });
 };
 export const loader = async ({ request }: LoaderArgs) => {
-  return json({ instanceState: await getInstanceState(),instanceId, ip: await getInstancePublicIp() });
+  await getInstanceData();
+  return json({ instanceState: await getInstanceState(), instanceId, ip: await getInstancePublicIp(), uptime: await getInstanceUptime() });
 };
 export default function Index() {
   const revalidator = useRevalidator();
@@ -30,12 +31,14 @@ export default function Index() {
   const data = useLoaderData<typeof loader>();
   const isRunning = data.instanceState === "running";
   const isStopped = data.instanceState === "stopped";
+  const uptime = data.instanceState === "running" ? data.uptime : '--:--:--';
 
   return (
     <main className="relative min-h-screen bg-white sm:flex sm:items-center sm:justify-center">
       <Form method="post" className="max-w-md w-full space-y-8 p-8 bg-white rounded-md shadow-lg">
         <h2 className="text-center font-medium text-xl">Instance ID: {data.instanceId}</h2>
         <h2 className="text-center font-medium text-xl">IP: {data.ip}</h2>
+        <h2 className="text-center font-medium text-xl">Uptime: {uptime}</h2>
 
         <div className="text-center text-lg font-semibold">{`Instance State: ${data.instanceState}`}</div>
         <div className="flex justify-center">
